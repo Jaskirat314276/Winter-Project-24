@@ -4,23 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import {
-  studentSchema,
-  StudentSchema,
-  teacherSchema,
-  TeacherSchema,
-} from "@/lib/formValidationSchemas";
-import { useFormState } from "react-dom";
-import {
-  createStudent,
-  createTeacher,
-  updateStudent,
-  updateTeacher,
-} from "@/lib/actions";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import { Dispatch, SetStateAction, useState } from "react";
+import { studentSchema, StudentSchema } from "@/lib/formValidationSchemas";
+import { createStudent, updateStudent } from "@/lib/actions";
 import { CldUploadWidget } from "next-cloudinary";
+import { useFormSubmit } from "./useFormSubmit";
 
 const StudentForm = ({
   type,
@@ -43,29 +31,12 @@ const StudentForm = ({
 
   const [img, setImg] = useState<any>();
 
-  const [state, formAction] = useFormState(
+  const { submit, pending, state } = useFormSubmit(
     type === "create" ? createStudent : updateStudent,
-    {
-      success: false,
-      error: false,
-    }
+    { entity: "Student", type, setOpen }
   );
 
-  const onSubmit = handleSubmit((data) => {
-    console.log("hello");
-    console.log(data);
-    formAction({ ...data, img: img?.secure_url });
-  });
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state.success) {
-      toast(`Student has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
-    }
-  }, [state, router, type, setOpen]);
+  const onSubmit = handleSubmit((d) => submit({ ...d, img: img?.secure_url }));
 
   const { grades, classes } = relatedData;
 
@@ -248,11 +219,15 @@ const StudentForm = ({
           )}
         </div>
       </div>
-      {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
+      {state.error && state.message && (
+        <span className="text-sm text-red-500">{state.message}</span>
       )}
-      <button type="submit" className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+      <button
+        type="submit"
+        disabled={pending}
+        className="bg-blue-400 text-white p-2 rounded-md disabled:opacity-60"
+      >
+        {pending ? "Saving…" : type === "create" ? "Create" : "Update"}
       </button>
     </form>
   );

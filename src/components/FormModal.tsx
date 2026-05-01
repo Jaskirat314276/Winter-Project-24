@@ -10,7 +10,7 @@ import {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
 import { toast } from "react-toastify";
 import { FormContainerProps } from "./FormContainer";
@@ -125,26 +125,35 @@ const FormModal = ({
     const [state, formAction] = useFormState(deleteActionMap[table], {
       success: false,
       error: false,
-    });
+    } as { success: boolean; error: boolean; message?: string });
 
+    const [pending, startTransition] = useTransition();
     const router = useRouter();
 
     useEffect(() => {
       if (state.success) {
-        toast(`${table} has been deleted!`);
+        toast.success(`${table} has been deleted!`);
         setOpen(false);
         router.refresh();
+      } else if (state.error) {
+        toast.error(state.message || "Could not delete. Try again.");
       }
     }, [state, router]);
 
     return type === "delete" && id ? (
-      <form action={formAction} className="p-4 flex flex-col gap-4">
+      <form
+        action={(fd) => startTransition(() => formAction(fd))}
+        className="p-4 flex flex-col gap-4"
+      >
         <input type="text | number" name="id" value={id} hidden />
         <span className="text-center font-medium">
           All data will be lost. Are you sure you want to delete this {table}?
         </span>
-        <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
-          Delete
+        <button
+          disabled={pending}
+          className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center disabled:opacity-60"
+        >
+          {pending ? "Deleting…" : "Delete"}
         </button>
       </form>
     ) : type === "create" || type === "update" ? (

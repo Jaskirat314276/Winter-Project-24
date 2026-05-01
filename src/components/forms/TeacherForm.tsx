@@ -4,13 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { teacherSchema, TeacherSchema } from "@/lib/formValidationSchemas";
-import { useFormState } from "react-dom";
 import { createTeacher, updateTeacher } from "@/lib/actions";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
+import { useFormSubmit } from "./useFormSubmit";
 
 const TeacherForm = ({
   type,
@@ -33,28 +31,12 @@ const TeacherForm = ({
 
   const [img, setImg] = useState<any>();
 
-  const [state, formAction] = useFormState(
+  const { submit, pending, state } = useFormSubmit(
     type === "create" ? createTeacher : updateTeacher,
-    {
-      success: false,
-      error: false,
-    }
+    { entity: "Teacher", type, setOpen }
   );
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-    formAction({ ...data, img: img?.secure_url });
-  });
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state.success) {
-      toast(`Teacher has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
-    }
-  }, [state, router, type, setOpen]);
+  const onSubmit = handleSubmit((d) => submit({ ...d, img: img?.secure_url }));
 
   const { subjects } = relatedData;
 
@@ -203,11 +185,14 @@ const TeacherForm = ({
           }}
         </CldUploadWidget>
       </div>
-      {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
+      {state.error && state.message && (
+        <span className="text-sm text-red-500">{state.message}</span>
       )}
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+      <button
+        disabled={pending}
+        className="bg-blue-400 text-white p-2 rounded-md disabled:opacity-60"
+      >
+        {pending ? "Saving…" : type === "create" ? "Create" : "Update"}
       </button>
     </form>
   );

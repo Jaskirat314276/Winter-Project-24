@@ -1,0 +1,14 @@
+# Caddy auto-issues a Let's Encrypt cert for ${DOMAIN} on first request and
+# auto-renews. ${DOMAIN} is supplied by docker-compose.yml from the .env file.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+
+	# Strip server header, light hardening.
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

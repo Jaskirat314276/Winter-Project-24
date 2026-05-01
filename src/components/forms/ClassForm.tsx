@@ -3,22 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import {
-  classSchema,
-  ClassSchema,
-  subjectSchema,
-  SubjectSchema,
-} from "@/lib/formValidationSchemas";
-import {
-  createClass,
-  createSubject,
-  updateClass,
-  updateSubject,
-} from "@/lib/actions";
-import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useEffect } from "react";
-import { toast } from "react-toastify";
-import { useRouter } from "next/navigation";
+import { classSchema, ClassSchema } from "@/lib/formValidationSchemas";
+import { createClass, updateClass } from "@/lib/actions";
+import { Dispatch, SetStateAction } from "react";
+import { useFormSubmit } from "./useFormSubmit";
 
 const ClassForm = ({
   type,
@@ -39,30 +27,12 @@ const ClassForm = ({
     resolver: zodResolver(classSchema),
   });
 
-  // AFTER REACT 19 IT'LL BE USEACTIONSTATE
-
-  const [state, formAction] = useFormState(
+  const { submit, pending, state } = useFormSubmit(
     type === "create" ? createClass : updateClass,
-    {
-      success: false,
-      error: false,
-    }
+    { entity: "Class", type, setOpen }
   );
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-    formAction(data);
-  });
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state.success) {
-      toast(`Subject has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
-    }
-  }, [state, router, type, setOpen]);
+  const onSubmit = handleSubmit((d) => submit(d));
 
   const { teachers, grades } = relatedData;
 
@@ -146,11 +116,14 @@ const ClassForm = ({
           )}
         </div>
       </div>
-      {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
+      {state.error && state.message && (
+        <span className="text-sm text-red-500">{state.message}</span>
       )}
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+      <button
+        disabled={pending}
+        className="bg-blue-400 text-white p-2 rounded-md disabled:opacity-60"
+      >
+        {pending ? "Saving…" : type === "create" ? "Create" : "Update"}
       </button>
     </form>
   );
