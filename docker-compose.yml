@@ -30,8 +30,9 @@ services:
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL:-/sign-in}
       NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL:-/sign-up}
       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}
-    # Run migrations on every container start, then launch the server.
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    # Run migrations on every container start (using the bundled prisma CLI,
+    # not npx which would download the latest), then launch the server.
+    command: sh -c "node node_modules/prisma/build/index.js migrate deploy && node server.js"
 
   caddy:
     image: caddy:2-alpine
